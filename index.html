@@ -7,14 +7,14 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#7c3aed">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0d0d1a;
-            color: #e2e8f0;
+            background: #f1f5f9;
+            color: #1e293b;
             min-height: 100vh;
             padding: 16px 16px 40px;
         }
@@ -28,15 +28,15 @@
 
         .header h1 {
             font-size: 17px;
-            font-weight: 600;
-            color: #94a3b8;
+            font-weight: 700;
+            color: #7c3aed;
             letter-spacing: 0.1em;
             text-transform: uppercase;
         }
 
         .date-line {
             font-size: 13px;
-            color: #475569;
+            color: #94a3b8;
             margin-top: 4px;
         }
 
@@ -45,7 +45,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px 0 16px;
+            padding: 16px 0 14px;
         }
 
         .ring-wrap {
@@ -62,7 +62,7 @@
 
         .ring-bg {
             fill: none;
-            stroke: #1e293b;
+            stroke: #e2e8f0;
             stroke-width: 12;
         }
 
@@ -87,15 +87,15 @@
         }
 
         .big-num {
-            font-size: 46px;
+            font-size: 48px;
             font-weight: 800;
-            color: #f8fafc;
+            color: #1e293b;
             line-height: 1;
         }
 
         .big-sub {
             font-size: 13px;
-            color: #64748b;
+            color: #94a3b8;
             margin-top: 3px;
         }
 
@@ -104,16 +104,17 @@
             display: flex;
             gap: 10px;
             width: 100%;
-            margin-top: 18px;
+            margin-top: 16px;
         }
 
         .stat {
             flex: 1;
-            background: #111827;
-            border: 1px solid #1e293b;
+            background: #fff;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 12px 10px;
             text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
         .stat-val {
@@ -122,62 +123,62 @@
             line-height: 1;
         }
 
-        .sv-purple { color: #a78bfa; }
-        .sv-green  { color: #34d399; }
-        .sv-amber  { color: #fbbf24; }
+        .sv-purple { color: #7c3aed; }
+        .sv-green  { color: #059669; }
+        .sv-amber  { color: #d97706; }
 
         .stat-lbl {
             font-size: 11px;
-            color: #475569;
+            color: #94a3b8;
             margin-top: 4px;
         }
 
         /* Notif bar */
         .notif-bar {
-            background: #1e1b4b;
-            border: 1px solid #3730a3;
+            background: #ede9fe;
+            border: 1px solid #c4b5fd;
             border-radius: 12px;
             padding: 12px 14px;
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 10px 0 20px;
+            margin: 12px 0 18px;
             cursor: pointer;
             user-select: none;
             transition: border-color 0.2s, background 0.2s;
         }
 
         .notif-bar.on {
-            background: #052e16;
-            border-color: #059669;
+            background: #d1fae5;
+            border-color: #6ee7b7;
         }
 
-        .nb-text { flex: 1; font-size: 13px; color: #a5b4fc; }
-        .notif-bar.on .nb-text { color: #6ee7b7; }
+        .nb-text { flex: 1; font-size: 13px; color: #6d28d9; }
+        .notif-bar.on .nb-text { color: #065f46; }
 
         .nb-timer {
             font-size: 12px;
             font-weight: 700;
-            color: #6366f1;
+            color: #7c3aed;
             font-variant-numeric: tabular-nums;
             min-width: 42px;
             text-align: right;
         }
 
-        .notif-bar.on .nb-timer { color: #10b981; }
+        .notif-bar.on .nb-timer { color: #059669; }
 
         /* Hours */
         .section-title {
             font-size: 12px;
-            color: #475569;
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 10px;
         }
 
         .hour-block {
-            background: #111827;
-            border: 1px solid #1e293b;
+            background: #fff;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 12px 14px;
             margin-bottom: 7px;
@@ -185,26 +186,28 @@
             align-items: center;
             gap: 10px;
             transition: border-color 0.2s, background 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
         .hour-block.active {
             border-color: #7c3aed;
-            background: #130f23;
+            background: #faf5ff;
         }
 
-        .hour-block.past { opacity: 0.55; }
+        .hour-block.past { opacity: 0.5; }
 
         .hour-block.target-met { border-color: #059669; }
 
         .h-time {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            color: #64748b;
-            min-width: 42px;
+            color: #94a3b8;
+            min-width: 96px;
             font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
 
-        .hour-block.active .h-time { color: #a78bfa; }
+        .hour-block.active .h-time { color: #7c3aed; }
 
         .dots-row {
             display: flex;
@@ -214,23 +217,30 @@
         }
 
         .dot {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            border: 2px solid #334155;
-            background: transparent;
+            border: 2px solid #cbd5e1;
+            background: #fff;
             cursor: pointer;
             transition: all 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
             flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        .dot:hover { border-color: #a78bfa; }
 
         .dot.on {
             background: #7c3aed;
             border-color: #7c3aed;
+        }
+
+        .dot.on:hover {
+            background: #6d28d9;
+            border-color: #6d28d9;
         }
 
         .hour-block.target-met .dot.on {
@@ -238,13 +248,21 @@
             border-color: #059669;
         }
 
-        .dot.on::after { content: '✓'; color: white; font-size: 11px; }
+        .hour-block.target-met .dot.on:hover {
+            background: #047857;
+            border-color: #047857;
+        }
+
+        .dot.on::after { content: '✓'; color: white; font-size: 12px; }
 
         .extra-badge {
             font-size: 11px;
-            color: #a78bfa;
-            font-weight: 600;
+            color: #7c3aed;
+            font-weight: 700;
             margin-left: 2px;
+            background: #ede9fe;
+            border-radius: 8px;
+            padding: 2px 6px;
         }
 
         .h-actions {
@@ -257,7 +275,6 @@
             width: 32px;
             height: 32px;
             border-radius: 8px;
-            border: none;
             cursor: pointer;
             font-size: 20px;
             line-height: 1;
@@ -272,6 +289,7 @@
 
         .btn-plus {
             background: #7c3aed;
+            border: none;
             color: white;
         }
 
@@ -279,18 +297,18 @@
 
         .btn-minus {
             background: transparent;
-            border: 1px solid #334155;
-            color: #64748b;
+            border: 1px solid #e2e8f0;
+            color: #94a3b8;
         }
 
-        .btn-minus:hover { border-color: #7c3aed; color: #a78bfa; }
+        .btn-minus:hover { border-color: #7c3aed; color: #7c3aed; }
 
         /* Countdown */
         .countdown-bar {
             text-align: center;
             padding: 14px 0 4px;
             font-size: 13px;
-            color: #475569;
+            color: #94a3b8;
         }
 
         .countdown-bar span {
@@ -304,15 +322,16 @@
             display: block;
             margin: 16px auto 0;
             background: transparent;
-            border: 1px solid #1e293b;
-            color: #475569;
+            border: 1px solid #e2e8f0;
+            color: #94a3b8;
             font-size: 12px;
             padding: 8px 20px;
             border-radius: 8px;
             cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
         }
 
-        .reset-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+        .reset-btn:hover { border-color: #7c3aed; color: #7c3aed; }
 
         /* Toast */
         .toast {
@@ -329,7 +348,7 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
             white-space: nowrap;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             pointer-events: none;
         }
 
@@ -423,7 +442,7 @@ function renderRing() {
     const C = 2 * Math.PI * 65;
     document.getElementById('ringEl').style.strokeDasharray = C;
     document.getElementById('ringEl').style.strokeDashoffset = C * (1 - pct);
-    document.getElementById('ringEl').style.stroke = t >= GOAL ? '#10b981' : '#7c3aed';
+    document.getElementById('ringEl').style.stroke = t >= GOAL ? '#059669' : '#7c3aed';
     document.getElementById('totalCount').textContent = t;
 }
 
@@ -439,6 +458,8 @@ function renderStats() {
     document.getElementById('last30Val').textContent = sinceBase;
 }
 
+function pad(n) { return String(n).padStart(2,'0'); }
+
 function renderHours() {
     const ch = new Date().getHours();
     const grid = document.getElementById('hoursGrid');
@@ -453,16 +474,19 @@ function renderHours() {
         else if (isPast) cls += ' past';
         if (met) cls += ' target-met';
 
-        const planDots = Array.from({length: PLAN}, (_,i) =>
-            `<div class="dot${i < cnt ? ' on' : ''}" onclick="addAt(${h})"></div>`
-        ).join('');
+        // Dots: click on filled dot → remove, click on empty dot → add
+        const planDots = Array.from({length: PLAN}, (_,i) => {
+            const filled = i < cnt;
+            const action = filled ? `rmAt(${h})` : `addAt(${h})`;
+            return `<div class="dot${filled ? ' on' : ''}" onclick="${action}"></div>`;
+        }).join('');
 
         const extra = cnt > PLAN
             ? `<span class="extra-badge">+${cnt - PLAN}</span>`
             : '';
 
         return `<div class="${cls}">
-            <div class="h-time">${String(h).padStart(2,'0')}:00</div>
+            <div class="h-time">${pad(h)}:00 – ${pad(h+1)}:00</div>
             <div class="dots-row">${planDots}${extra}</div>
             <div class="h-actions">
                 <button class="btn-minus" onclick="rmAt(${h})">−</button>
@@ -481,11 +505,15 @@ function addAt(h) {
     render();
     const t = total();
     if (t === GOAL) showToast('🎉 Цель достигнута! 10/10 встреч!');
-    else showToast(`+1 в ${String(h).padStart(2,'0')}:00 · Итого: ${t}/10`);
+    else showToast(`+1 в ${pad(h)}:00 · Итого: ${t}/10`);
 }
 
 function rmAt(h) {
-    if ((data[h]||0) > 0) { data[h]--; save(); render(); }
+    if ((data[h]||0) > 0) {
+        data[h]--;
+        save();
+        render();
+    }
 }
 
 function confirmReset() {
@@ -530,7 +558,7 @@ function updateNbTimer() {
     const m = Math.floor(countdown / 60);
     const s = countdown % 60;
     document.getElementById('nbTimer').textContent =
-        notifOn ? `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : '';
+        notifOn ? `${pad(m)}:${pad(s)}` : '';
 }
 
 function fireNotif() {
@@ -560,8 +588,7 @@ function updateEndTimer() {
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
-    document.getElementById('endTimer').textContent =
-        `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('endTimer').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 function updateDate() {
