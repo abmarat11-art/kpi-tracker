@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>KPI — Встречи</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0d0d1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 16px 16px 40px;
+        }
+
+        .app { max-width: 480px; margin: 0 auto; }
+
+        .header {
+            text-align: center;
+            padding: 20px 0 16px;
+        }
+
+        .header h1 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .date-line {
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+        }
+
+        /* Ring */
+        .progress-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0 16px;
+        }
+
+        .ring-wrap {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+
+        .ring-svg {
+            transform: rotate(-90deg);
+            width: 160px;
+            height: 160px;
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 12;
+        }
+
+        .ring-fg {
+            fill: none;
+            stroke: #7c3aed;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 408.41;
+            stroke-dashoffset: 408.41;
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        stroke 0.4s;
+        }
+
+        .ring-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .big-num {
+            font-size: 46px;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1;
+        }
+
+        .big-sub {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 18px;
+        }
+
+        .stat {
+            flex: 1;
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .sv-purple { color: #a78bfa; }
+        .sv-green  { color: #34d399; }
+        .sv-amber  { color: #fbbf24; }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: #475569;
+            margin-top: 4px;
+        }
+
+        /* Notif bar */
+        .notif-bar {
+            background: #1e1b4b;
+            border: 1px solid #3730a3;
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .notif-bar.on {
+            background: #052e16;
+            border-color: #059669;
+        }
+
+        .nb-text { flex: 1; font-size: 13px; color: #a5b4fc; }
+        .notif-bar.on .nb-text { color: #6ee7b7; }
+
+        .nb-timer {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6366f1;
+            font-variant-numeric: tabular-nums;
+            min-width: 42px;
+            text-align: right;
+        }
+
+        .notif-bar.on .nb-timer { color: #10b981; }
+
+        /* Hours */
+        .section-title {
+            font-size: 12px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .hour-block {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 7px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .hour-block.active {
+            border-color: #7c3aed;
+            background: #130f23;
+        }
+
+        .hour-block.past { opacity: 0.55; }
+
+        .hour-block.target-met { border-color: #059669; }
+
+        .h-time {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            min-width: 42px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .hour-block.active .h-time { color: #a78bfa; }
+
+        .dots-row {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid #334155;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .dot.on {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+
+        .hour-block.target-met .dot.on {
+            background: #059669;
+            border-color: #059669;
+        }
+
+        .dot.on::after { content: '✓'; color: white; font-size: 11px; }
+
+        .extra-badge {
+            font-size: 11px;
+            color: #a78bfa;
+            font-weight: 600;
+            margin-left: 2px;
+        }
+
+        .h-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn-plus, .btn-minus {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, transform 0.1s, border-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-plus:active, .btn-minus:active { transform: scale(0.88); }
+
+        .btn-plus {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .btn-plus:hover { background: #6d28d9; }
+
+        .btn-minus {
+            background: transparent;
+            border: 1px solid #334155;
+            color: #64748b;
+        }
+
+        .btn-minus:hover { border-color: #7c3aed; color: #a78bfa; }
+
+        /* Countdown */
+        .countdown-bar {
+            text-align: center;
+            padding: 14px 0 4px;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .countdown-bar span {
+            font-weight: 600;
+            color: #64748b;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Reset */
+        .reset-btn {
+            display: block;
+            margin: 16px auto 0;
+            background: transparent;
+            border: 1px solid #1e293b;
+            color: #475569;
+            font-size: 12px;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .reset-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e1b4b;
+            border: 1px solid #3730a3;
+            color: #c7d2fe;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            white-space: nowrap;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>KPI — Встречи</h1>
+        <div class="date-line" id="dateLine"></div>
+    </div>
+
+    <div class="progress-section">
+        <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 160 160">
+                <circle class="ring-bg" cx="80" cy="80" r="65"/>
+                <circle class="ring-fg" id="ringEl" cx="80" cy="80" r="65"/>
+            </svg>
+            <div class="ring-center">
+                <div class="big-num" id="totalCount">0</div>
+                <div class="big-sub">из 10 встреч</div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-val sv-green" id="last30Val">0</div>
+                <div class="stat-lbl">за 30 мин</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val sv-amber" id="remainVal">10</div>
+                <div class="stat-lbl">осталось</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val sv-purple" id="hoursLeftVal">9.0</div>
+                <div class="stat-lbl">ч. до 18:00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notif-bar" id="notifBar" onclick="handleNotifClick()">
+        <div style="font-size:18px">🔔</div>
+        <div class="nb-text" id="nbText">Включить уведомления каждые 30 мин</div>
+        <div class="nb-timer" id="nbTimer"></div>
+    </div>
+
+    <div class="section-title">По часам · план 2 встречи/час</div>
+    <div id="hoursGrid"></div>
+
+    <div class="countdown-bar">
+        До конца рабочего дня: <span id="endTimer">—</span>
+    </div>
+
+    <button class="reset-btn" onclick="confirmReset()">Сбросить день</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const HOURS = [9,10,11,12,13,14,15,16,17];
+const GOAL = 10;
+const PLAN = 2;
+const END_H = 18;
+
+const todayKey = () => 'kpi_' + new Date().toISOString().slice(0,10);
+
+let data = {};
+let notifOn = false;
+let notifInterval = null;
+let countdown = 30 * 60;
+let last30Base = 0;
+
+/* ── Data ── */
+function load() {
+    try { data = JSON.parse(localStorage.getItem(todayKey()) || '{}'); }
+    catch { data = {}; }
+    HOURS.forEach(h => { if (data[h] == null) data[h] = 0; });
+}
+
+function save() {
+    localStorage.setItem(todayKey(), JSON.stringify(data));
+}
+
+function total() { return HOURS.reduce((s,h) => s + (data[h]||0), 0); }
+
+/* ── Render ── */
+function renderRing() {
+    const t = total();
+    const pct = Math.min(t / GOAL, 1);
+    const C = 2 * Math.PI * 65;
+    document.getElementById('ringEl').style.strokeDasharray = C;
+    document.getElementById('ringEl').style.strokeDashoffset = C * (1 - pct);
+    document.getElementById('ringEl').style.stroke = t >= GOAL ? '#10b981' : '#7c3aed';
+    document.getElementById('totalCount').textContent = t;
+}
+
+function renderStats() {
+    const t = total();
+    const remain = Math.max(0, GOAL - t);
+    const now = new Date();
+    const hoursLeft = Math.max(0, END_H - now.getHours() - now.getMinutes()/60).toFixed(1);
+    const sinceBase = Math.max(0, t - last30Base);
+
+    document.getElementById('remainVal').textContent = remain;
+    document.getElementById('hoursLeftVal').textContent = hoursLeft;
+    document.getElementById('last30Val').textContent = sinceBase;
+}
+
+function renderHours() {
+    const ch = new Date().getHours();
+    const grid = document.getElementById('hoursGrid');
+    grid.innerHTML = HOURS.map(h => {
+        const cnt = data[h] || 0;
+        const isActive = h === ch;
+        const isPast   = h < ch;
+        const met      = cnt >= PLAN;
+
+        let cls = 'hour-block';
+        if (isActive) cls += ' active';
+        else if (isPast) cls += ' past';
+        if (met) cls += ' target-met';
+
+        const planDots = Array.from({length: PLAN}, (_,i) =>
+            `<div class="dot${i < cnt ? ' on' : ''}" onclick="addAt(${h})"></div>`
+        ).join('');
+
+        const extra = cnt > PLAN
+            ? `<span class="extra-badge">+${cnt - PLAN}</span>`
+            : '';
+
+        return `<div class="${cls}">
+            <div class="h-time">${String(h).padStart(2,'0')}:00</div>
+            <div class="dots-row">${planDots}${extra}</div>
+            <div class="h-actions">
+                <button class="btn-minus" onclick="rmAt(${h})">−</button>
+                <button class="btn-plus" onclick="addAt(${h})">+</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function render() { renderRing(); renderStats(); renderHours(); }
+
+/* ── Actions ── */
+function addAt(h) {
+    data[h] = (data[h]||0) + 1;
+    save();
+    render();
+    const t = total();
+    if (t === GOAL) showToast('🎉 Цель достигнута! 10/10 встреч!');
+    else showToast(`+1 в ${String(h).padStart(2,'0')}:00 · Итого: ${t}/10`);
+}
+
+function rmAt(h) {
+    if ((data[h]||0) > 0) { data[h]--; save(); render(); }
+}
+
+function confirmReset() {
+    if (confirm('Сбросить все встречи за сегодня?')) {
+        HOURS.forEach(h => data[h] = 0);
+        last30Base = 0;
+        save();
+        render();
+        showToast('День сброшен');
+    }
+}
+
+/* ── Notifications ── */
+function handleNotifClick() {
+    if (!('Notification' in window)) {
+        showToast('Браузер не поддерживает уведомления'); return;
+    }
+    if (notifOn) return;
+    Notification.requestPermission().then(perm => {
+        if (perm === 'granted') startNotif();
+        else showToast('Разрешение не получено');
+    });
+}
+
+function startNotif() {
+    notifOn = true;
+    countdown = 30 * 60;
+    last30Base = total();
+    document.getElementById('notifBar').classList.add('on');
+    document.getElementById('nbText').textContent = 'Уведомления включены ✓';
+    showToast('Уведомления включены! Каждые 30 мин.');
+
+    if (notifInterval) clearInterval(notifInterval);
+    notifInterval = setInterval(() => {
+        countdown--;
+        updateNbTimer();
+        if (countdown <= 0) { fireNotif(); countdown = 30 * 60; }
+    }, 1000);
+}
+
+function updateNbTimer() {
+    const m = Math.floor(countdown / 60);
+    const s = countdown % 60;
+    document.getElementById('nbTimer').textContent =
+        notifOn ? `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : '';
+}
+
+function fireNotif() {
+    const t = total();
+    const sinceBase = Math.max(0, t - last30Base);
+    const remain = Math.max(0, GOAL - t);
+
+    new Notification('KPI — Встречи 📊', {
+        body: `За последние 30 мин: ${sinceBase}\nОсталось сегодня: ${remain} из ${GOAL}`,
+        tag: 'kpi-30min',
+        requireInteraction: false
+    });
+
+    last30Base = t;
+    renderStats();
+}
+
+/* ── Clock ── */
+function updateEndTimer() {
+    const now = new Date();
+    const end = new Date(); end.setHours(END_H, 0, 0, 0);
+    const diff = end - now;
+    if (diff <= 0) {
+        document.getElementById('endTimer').textContent = 'рабочий день завершён';
+        return;
+    }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('endTimer').textContent =
+        `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateDate() {
+    const d = new Date();
+    const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    document.getElementById('dateLine').textContent =
+        `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+/* ── Toast ── */
+let toastTimer = null;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ── Init ── */
+load();
+updateDate();
+render();
+updateEndTimer();
+
+if (Notification.permission === 'granted') startNotif();
+
+setInterval(() => { updateEndTimer(); renderStats(); }, 1000);
+setInterval(() => render(), 60000);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

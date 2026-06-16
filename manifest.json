@@ -1,0 +1,19 @@
+{
+  "name": "KPI — Встречи",
+  "short_name": "KPI",
+  "description": "Трекер дневных встреч",
+  "start_url": "/kpi-tracker/",
+  "scope": "/kpi-tracker/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d1a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
