@@ -1,4 +1,4 @@
-const CACHE = 'kpi-v2';
+const CACHE = 'kpi-v3';
 
 self.addEventListener('install', e => {
     self.skipWaiting();
