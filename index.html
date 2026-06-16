@@ -538,13 +538,27 @@ function handleNotifClick() {
     });
 }
 
-function startNotif() {
+function startNotif(silent) {
     notifOn = true;
-    countdown = 30 * 60;
-    last30Base = total();
+
+    // Restore countdown from last notification time
+    const lastTs = parseInt(localStorage.getItem('kpi_last_notif') || '0');
+    if (lastTs) {
+        const elapsed = Math.floor((Date.now() - lastTs) / 1000);
+        countdown = Math.max(1, 30 * 60 - elapsed);
+    } else {
+        countdown = 30 * 60;
+        localStorage.setItem('kpi_last_notif', Date.now());
+    }
+
+    // Restore last30Base
+    const savedBase = localStorage.getItem('kpi_last30_base');
+    if (savedBase !== null) last30Base = parseInt(savedBase);
+    else { last30Base = total(); localStorage.setItem('kpi_last30_base', last30Base); }
+
     document.getElementById('notifBar').classList.add('on');
     document.getElementById('nbText').textContent = 'Уведомления включены ✓';
-    showToast('Уведомления включены! Каждые 30 мин.');
+    if (!silent) showToast('Уведомления включены! Каждые 30 мин.');
 
     if (notifInterval) clearInterval(notifInterval);
     notifInterval = setInterval(() => {
@@ -573,6 +587,8 @@ function fireNotif() {
     });
 
     last30Base = t;
+    localStorage.setItem('kpi_last_notif', Date.now());
+    localStorage.setItem('kpi_last30_base', last30Base);
     renderStats();
 }
 
@@ -615,7 +631,7 @@ updateDate();
 render();
 updateEndTimer();
 
-if (Notification.permission === 'granted') startNotif();
+if (Notification.permission === 'granted') startNotif(true);
 
 setInterval(() => { updateEndTimer(); renderStats(); }, 1000);
 setInterval(() => render(), 60000);
