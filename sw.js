@@ -1,15 +1,27 @@
-const CACHE = 'kpi-v1';
-const FILES = ['./', './index.html', './manifest.json'];
+const CACHE = 'kpi-v2';
 
 self.addEventListener('install', e => {
-    e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
     self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
-    e.waitUntil(clients.claim());
+    // Remove old caches
+    e.waitUntil(
+        caches.keys()
+            .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+            .then(() => clients.claim())
+    );
 });
 
 self.addEventListener('fetch', e => {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    // Network first: always try network, cache only as offline fallback
+    e.respondWith(
+        fetch(e.request)
+            .then(response => {
+                const clone = response.clone();
+                caches.open(CACHE).then(c => c.put(e.request, clone));
+                return response;
+            })
+            .catch(() => caches.match(e.request))
+    );
 });
