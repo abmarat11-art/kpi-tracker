@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KPI Встречи</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --accent: #7c3aed;
+            --accent-light: #ede9fe;
+            --green: #059669;
+            --green-light: #d1fae5;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --muted: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* ── LOGIN ── */
+        .login-screen {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .login-box {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 32px 24px;
+            width: 100%; max-width: 340px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+        }
+        .login-icon { text-align: center; font-size: 40px; margin-bottom: 6px; }
+        .login-title { text-align: center; font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+        .login-sub   { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+        .field { margin-bottom: 12px; }
+        .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .field select, .field input {
+            width: 100%; padding: 12px 13px;
+            border: 1.5px solid var(--border); border-radius: 10px;
+            font-size: 15px; color: var(--text); background: var(--card);
+            outline: none; transition: border-color 0.2s;
+            appearance: none; -webkit-appearance: none;
+        }
+        .field select:focus, .field input:focus { border-color: var(--accent); }
+        .login-btn {
+            width: 100%; padding: 14px;
+            background: var(--accent); color: white;
+            border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 4px; transition: background 0.2s;
+        }
+        .login-btn:active { background: #6d28d9; }
+        .login-err { color: #dc2626; font-size: 13px; text-align: center; margin-top: 10px; min-height: 16px; }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 20;
+        }
+        .header-left h2 { font-size: 15px; font-weight: 800; color: var(--accent); }
+        .header-left p  { font-size: 12px; color: var(--muted); }
+        .header-right { display: flex; align-items: center; gap: 8px; }
+        .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+        .sync-dot.live { background: var(--green); }
+        .out-btn {
+            font-size: 12px; color: var(--muted);
+            background: none; border: 1px solid var(--border);
+            border-radius: 7px; padding: 5px 10px; cursor: pointer;
+        }
+
+        /* ── PROGRESS BAR ── */
+        .progress-wrap {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 16px;
+        }
+        .prog-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .prog-count { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+        .prog-goal  { font-size: 13px; color: var(--muted); align-self: flex-end; padding-bottom: 3px; }
+        .prog-bar   { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .prog-fill  { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s; }
+        .prog-fill.done { background: var(--green); }
+        .stats-mini { display: flex; gap: 6px; margin-top: 8px; }
+        .stat-chip {
+            flex: 1; background: #f8fafc; border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 6px; text-align: center;
+        }
+        .sc-val { font-size: 18px; font-weight: 700; }
+        .sc-lbl { font-size: 10px; color: var(--muted); margin-top: 1px; }
+        .sv-g { color: var(--green); }
+        .sv-a { color: #d97706; }
+        .sv-p { color: var(--accent); }
+
+        /* ── TEAM SECTION (admin) ── */
+        .section-hdr {
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.07em;
+            padding: 14px 16px 6px;
+        }
+        .team-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+        .team-row {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 13px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .tr-name { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tr-count { font-size: 18px; font-weight: 800; color: var(--accent); min-width: 28px; text-align: right; }
+        .tr-count.done { color: var(--green); }
+        .tr-mini-bar { flex: 1; height: 5px; background: #f1f5f9; border-radius: 3px; overflow: hidden; max-width: 80px; }
+        .tr-mini-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+        .tr-mini-fill.done { background: var(--green); }
+
+        /* ── HOURS ── */
+        .hours-list { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 7px; }
+        .hour-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 12px;
+            display: flex; align-items: center; gap: 8px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .hour-card.active { border-color: var(--accent); background: #faf5ff; }
+        .hour-card.past   { opacity: 0.45; }
+        .hour-card.met    { border-color: var(--green); }
+        .h-time { font-size: 11px; font-weight: 600; color: var(--muted); min-width: 80px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .hour-card.active .h-time { color: var(--accent); }
+        .dots { display: flex; gap: 5px; flex: 1; align-items: center; }
+        .dot {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 2px solid #cbd5e1; background: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; flex-shrink: 0;
+        }
+        .dot.on { background: var(--accent); border-color: var(--accent); }
+        .dot.on::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+        .hour-card.met .dot.on { background: var(--green); border-color: var(--green); }
+        .extra { font-size: 11px; color: var(--accent); font-weight: 700; background: var(--accent-light); border-radius: 7px; padding: 2px 5px; }
+        .h-btns { display: flex; gap: 5px; flex-shrink: 0; }
+        .btn-m, .btn-p {
+            width: 30px; height: 30px; border-radius: 8px;
+            font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: transform 0.1s;
+        }
+        .btn-m:active, .btn-p:active { transform: scale(0.85); }
+        .btn-p { background: var(--accent); border: none; color: white; }
+        .btn-m { background: none; border: 1px solid var(--border); color: var(--muted); }
+
+        /* ── NOTIF BAR ── */
+        .notif-bar {
+            margin: 0 16px 6px;
+            background: var(--accent-light); border: 1px solid #c4b5fd;
+            border-radius: 10px; padding: 10px 13px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; transition: background 0.2s, border-color 0.2s;
+        }
+        .notif-bar.on { background: var(--green-light); border-color: #6ee7b7; }
+        .nb-txt { flex: 1; font-size: 13px; color: #6d28d9; }
+        .notif-bar.on .nb-txt { color: #065f46; }
+        .nb-tmr { font-size: 12px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+        .notif-bar.on .nb-tmr { color: var(--green); }
+
+        /* ── FOOTER ── */
+        .footer-space { height: 60px; }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1e1b4b; color: #c7d2fe;
+            padding: 10px 20px; border-radius: 10px; font-size: 13px;
+            transition: transform 0.3s ease; z-index: 100; white-space: nowrap;
+            pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-screen">
+        <div class="login-box">
+            <div class="login-icon">📋</div>
+            <div class="login-title">KPI — Встречи</div>
+            <div class="login-sub">Трекер ежедневных встреч</div>
+            <div class="field">
+                <label>Кто ты?</label>
+                <select id="userSelect">
+                    <option value="">— выбери имя —</option>
+                    <option value="marat">Марат Абдуллин</option>
+                    <option value="konstantin">Константин Ю</option>
+                    <option value="ese">Эсе Осорох</option>
+                    <option value="artem">Артём Новосельцев</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Пароль</label>
+                <input type="password" id="passInput" placeholder="••••••••"
+                    onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <button class="login-btn" onclick="doLogin()">Войти</button>
+            <div class="login-err" id="loginErr"></div>
+        </div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen" style="display:none">
+    <div class="header">
+        <div class="header-left">
+            <h2>KPI — Встречи</h2>
+            <p id="hdrName"></p>
+        </div>
+        <div class="header-right">
+            <div class="sync-dot" id="syncDot"></div>
+            <button class="out-btn" onclick="doLogout()">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+        <div class="prog-row">
+            <div class="prog-count" id="totalCount">0</div>
+            <div class="prog-goal">из 10 встреч</div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="stats-mini">
+            <div class="stat-chip"><div class="sc-val sv-g" id="s30">0</div><div class="sc-lbl">за 30 мин</div></div>
+            <div class="stat-chip"><div class="sc-val sv-a" id="sRem">10</div><div class="sc-lbl">осталось</div></div>
+            <div class="stat-chip"><div class="sc-val sv-p" id="sHrs">9.0</div><div class="sc-lbl">ч до 18:00</div></div>
+        </div>
+    </div>
+
+    <!-- Team (admin only) -->
+    <div id="teamSection" style="display:none">
+        <div class="section-hdr">Команда сегодня</div>
+        <div class="team-list" id="teamList"></div>
+    </div>
+
+    <!-- Notif -->
+    <div class="section-hdr">Уведомления</div>
+    <div class="notif-bar" id="notifBar" onclick="handleNotifClick()">
+        <span style="font-size:16px">🔔</span>
+        <span class="nb-txt" id="nbTxt">Включить уведомления каждые 30 мин</span>
+        <span class="nb-tmr" id="nbTmr"></span>
+    </div>
+
+    <!-- Hours -->
+    <div class="section-hdr">По часам · план 2/час</div>
+    <div class="hours-list" id="hoursList"></div>
+    <div class="footer-space"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB = 'https://kpi-team-1999d-default-rtdb.europe-west1.firebasedatabase.app';
+const HOURS = [9,10,11,12,13,14,15,16,17];
+const GOAL = 10, PLAN = 2, END_H = 18;
+
+const USERS = {
+    marat:      { name: 'Марат Абдуллин',   password: 'Mn4vP9kS', isAdmin: true  },
+    konstantin: { name: 'Константин Ю',      password: 'Kj7mP3xR', isAdmin: false },
+    ese:        { name: 'Эсе Осорох',        password: 'Ae9nB5qW', isAdmin: false },
+    artem:      { name: 'Артём Новосельцев', password: 'Wt2cF8jY', isAdmin: false },
+};
+
+// Telegram Web App init
+const tg = window.Telegram?.WebApp;
+if (tg) {
+    tg.expand();
+    tg.ready();
+    tg.enableClosingConfirmation();
+    document.documentElement.style.setProperty('--bg', tg.themeParams?.bg_color || '#f1f5f9');
+    document.documentElement.style.setProperty('--card', tg.themeParams?.secondary_bg_color || '#ffffff');
+    document.documentElement.style.setProperty('--text', tg.themeParams?.text_color || '#1e293b');
+}
+
+let currentUser = null, data = {}, allTeamData = {};
+let notifOn = false, notifInterval = null, nextNotifTs = null, last30Base = 0;
+let sseSource = null;
+
+const NOTIF_SCHEDULE = [];
+for (let h = 9; h <= 18; h++) {
+    if (h > 9)  NOTIF_SCHEDULE.push(h * 60);
+    if (h < 18) NOTIF_SCHEDULE.push(h * 60 + 30);
+}
+
+function getNextNotifTs() {
+    const now = new Date();
+    const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    for (const min of NOTIF_SCHEDULE) {
+        if (min * 60 > nowSec) {
+            const t = new Date(now);
+            t.setHours(Math.floor(min / 60), min % 60, 0, 0);
+            return t.getTime();
+        }
+    }
+    return null;
+}
+
+/* ── AUTH ── */
+function doLogin() {
+    const key  = document.getElementById('userSelect').value;
+    const pass = document.getElementById('passInput').value;
+    if (!key)           { setErr('Выбери имя'); return; }
+    if (!USERS[key])    { setErr('Пользователь не найден'); return; }
+    if (USERS[key].password !== pass) { setErr('Неверный пароль'); return; }
+    currentUser = key;
+    localStorage.setItem('kpi_user', key);
+    showApp();
+}
+function doLogout() {
+    if (sseSource)      { sseSource.close(); sseSource = null; }
+    if (notifInterval)  { clearInterval(notifInterval); notifInterval = null; }
+    notifOn = false; currentUser = null;
+    localStorage.removeItem('kpi_user');
+    document.getElementById('appScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('passInput').value = '';
+}
+function setErr(msg) { document.getElementById('loginErr').textContent = msg; }
+
+/* ── APP ── */
+function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display  = '';
+    document.getElementById('hdrName').textContent = USERS[currentUser].name;
+
+    const admin = USERS[currentUser].isAdmin;
+    document.getElementById('teamSection').style.display = admin ? '' : 'none';
+
+    const load = d => { data = extractUserData(d); render(); };
+
+    if (admin) {
+        fetch(`${DB}/kpi/${todayKey()}.json`)
+            .then(r => r.json())
+            .then(d => { allTeamData = d || {}; load(allTeamData[currentUser]); renderTeam(); startSSE(); })
+            .catch(() => { allTeamData = {}; data = emptyData(); render(); startSSE(); });
+    } else {
+        fetch(`${DB}/kpi/${todayKey()}/${currentUser}.json`)
+            .then(r => r.json())
+            .then(d => load(d))
+            .catch(() => { data = emptyData(); render(); });
+    }
+    if (Notification.permission === 'granted') startNotif();
+}
+
+/* ── FIREBASE ── */
+function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function extractUserData(raw) { const d = {}; HOURS.forEach(h => { d[h] = raw?.[String(h)] || 0; }); return d; }
+function emptyData()          { const d = {}; HOURS.forEach(h => { d[h] = 0; }); return d; }
+
+function saveToFirebase() {
+    const payload = {};
+    HOURS.forEach(h => { payload[String(h)] = data[h] || 0; });
+    fetch(`${DB}/kpi/${todayKey()}/${currentUser}.json`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    }).catch(() => {});
+}
+
+function startSSE() {
+    if (sseSource) sseSource.close();
+    try {
+        sseSource = new EventSource(`${DB}/kpi/${todayKey()}.json`);
+        sseSource.addEventListener('put',   e => applySSE(JSON.parse(e.data)));
+        sseSource.addEventListener('patch', e => applySSE(JSON.parse(e.data)));
+        sseSource.onerror = () => setSyncLive(false);
+    } catch(e) { setSyncLive(false); }
+}
+function applySSE({ path, data: d }) {
+    if (path === '/') { allTeamData = d || {}; }
+    else {
+        const parts = path.replace(/^\//, '').split('/');
+        if (parts.length === 1) allTeamData[parts[0]] = d;
+        else if (parts.length === 2) { if (!allTeamData[parts[0]]) allTeamData[parts[0]] = {}; allTeamData[parts[0]][parts[1]] = d; }
+    }
+    const fresh = allTeamData[currentUser];
+    if (fresh) data = extractUserData(fresh);
+    setSyncLive(true); render();
+    if (USERS[currentUser]?.isAdmin) renderTeam();
+}
+function setSyncLive(ok) {
+    const el = document.getElementById('syncDot');
+    if (el) el.className = ok ? 'sync-dot live' : 'sync-dot';
+}
+
+/* ── RENDER ── */
+function total() { return HOURS.reduce((s,h) => s + (data[h]||0), 0); }
+
+function render() { renderProgress(); renderHours(); }
+
+function renderProgress() {
+    const t = total();
+    const now = new Date();
+    const pct = Math.min(t / GOAL, 1) * 100;
+    document.getElementById('totalCount').textContent = t;
+    const fill = document.getElementById('progFill');
+    fill.style.width = pct + '%';
+    fill.className = 'prog-fill' + (t >= GOAL ? ' done' : '');
+    document.getElementById('sRem').textContent = Math.max(0, GOAL - t);
+    document.getElementById('s30').textContent  = Math.max(0, t - last30Base);
+    const hl = Math.max(0, END_H - now.getHours() - now.getMinutes()/60).toFixed(1);
+    document.getElementById('sHrs').textContent = hl;
+}
+
+function renderHours() {
+    const ch = new Date().getHours();
+    const list = document.getElementById('hoursList');
+    if (!list) return;
+    list.innerHTML = HOURS.map(h => {
+        const cnt = data[h] || 0;
+        const active = h === ch, past = h < ch, met = cnt >= PLAN;
+        let cls = 'hour-card';
+        if (active) cls += ' active';
+        else if (past) cls += ' past';
+        if (met) cls += ' met';
+        const dots = Array.from({length: PLAN}, (_,i) => {
+            const on = i < cnt;
+            return `<div class="dot${on ? ' on' : ''}" onclick="${on ? `rmAt(${h})` : `addAt(${h})`}"></div>`;
+        }).join('');
+        const extra = cnt > PLAN ? `<span class="extra">+${cnt-PLAN}</span>` : '';
+        return `<div class="${cls}">
+            <div class="h-time">${pad(h)}:00–${pad(h+1)}:00</div>
+            <div class="dots">${dots}${extra}</div>
+            <div class="h-btns">
+                <button class="btn-m" onclick="rmAt(${h})">−</button>
+                <button class="btn-p" onclick="addAt(${h})">+</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderTeam() {
+    const list = document.getElementById('teamList');
+    if (!list) return;
+    list.innerHTML = ['konstantin','ese','artem'].map(uid => {
+        const ud = allTeamData[uid] || {};
+        const t  = HOURS.reduce((s,h) => s + (ud[String(h)] || 0), 0);
+        const pct = Math.min(t / GOAL, 1) * 100;
+        const done = t >= GOAL;
+        return `<div class="team-row">
+            <div class="tr-name">${USERS[uid].name.split(' ')[0]}</div>
+            <div class="tr-mini-bar"><div class="tr-mini-fill${done?' done':''}" style="width:${pct.toFixed(0)}%"></div></div>
+            <div class="tr-count${done?' done':''}">${t}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ── ACTIONS ── */
+function addAt(h) {
+    data[h] = (data[h] || 0) + 1;
+    if (!allTeamData[currentUser]) allTeamData[currentUser] = {};
+    allTeamData[currentUser][String(h)] = data[h];
+    saveToFirebase(); render();
+    if (USERS[currentUser]?.isAdmin) renderTeam();
+    const t = total();
+    if (t === GOAL) { showToast('🎉 Цель достигнута!'); tg?.HapticFeedback?.notificationOccurred('success'); }
+    else showToast(`+1 в ${pad(h)}:00 · Итого: ${t}/10`);
+}
+function rmAt(h) {
+    if ((data[h] || 0) > 0) {
+        data[h]--;
+        if (allTeamData[currentUser]) allTeamData[currentUser][String(h)] = data[h];
+        saveToFirebase(); render();
+        if (USERS[currentUser]?.isAdmin) renderTeam();
+    }
+}
+
+/* ── NOTIFICATIONS ── */
+function handleNotifClick() {
+    if (!('Notification' in window)) { showToast('Браузер не поддерживает уведомления'); return; }
+    if (notifOn) return;
+    Notification.requestPermission().then(p => {
+        if (p === 'granted') startNotif(); else showToast('Разрешение не получено');
+    });
+}
+function startNotif() {
+    notifOn = true;
+    nextNotifTs = getNextNotifTs();
+    const saved = localStorage.getItem('kpi_last30_base');
+    last30Base = saved !== null ? parseInt(saved) : total();
+    if (saved === null) localStorage.setItem('kpi_last30_base', last30Base);
+    document.getElementById('notifBar').classList.add('on');
+    document.getElementById('nbTxt').textContent = 'Уведомления включены ✓';
+    if (notifInterval) clearInterval(notifInterval);
+    notifInterval = setInterval(() => {
+        if (nextNotifTs && Date.now() >= nextNotifTs) { fireNotif(); nextNotifTs = getNextNotifTs(); }
+        updateNbTmr();
+    }, 1000);
+}
+function updateNbTmr() {
+    const el = document.getElementById('nbTmr');
+    if (!notifOn || !nextNotifTs) { el.textContent = ''; return; }
+    const sec = Math.max(0, Math.round((nextNotifTs - Date.now()) / 1000));
+    el.textContent = `${pad(Math.floor(sec/60))}:${pad(sec%60)}`;
+}
+function fireNotif() {
+    const t = total();
+    const sinceBase = Math.max(0, t - last30Base);
+    new Notification('KPI — Встречи 📊', {
+        body: `За 30 мин: ${sinceBase} · Осталось: ${Math.max(0, GOAL - t)} из ${GOAL}`,
+        tag: 'kpi-30min'
+    });
+    last30Base = t;
+    localStorage.setItem('kpi_last30_base', last30Base);
+    renderProgress();
+}
+
+/* ── UTILS ── */
+function pad(n) { return String(n).padStart(2, '0'); }
+
+let toastTimer;
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ── INIT ── */
+const savedUser = localStorage.getItem('kpi_user');
+if (savedUser && USERS[savedUser]) { currentUser = savedUser; showApp(); }
+
+setInterval(() => { if (currentUser) renderProgress(); updateNbTmr(); }, 1000);
+setInterval(() => { if (currentUser) renderHours(); }, 60000);
+</script>
+</body>
+</html>
