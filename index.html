@@ -366,8 +366,28 @@ let currentUser = null;
 let data = {};
 let notifOn = false;
 let notifInterval = null;
-let countdown = 30 * 60;
+let nextNotifTs = null;
 let last30Base = 0;
+
+// Fixed schedule: 9:30, 10:00, 10:30, ..., 17:30, 18:00 (minutes since midnight)
+const NOTIF_SCHEDULE = [];
+for (let h = 9; h <= 18; h++) {
+    if (h > 9) NOTIF_SCHEDULE.push(h * 60);
+    if (h < 18) NOTIF_SCHEDULE.push(h * 60 + 30);
+}
+
+function getNextNotifTs() {
+    const now = new Date();
+    const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    for (const min of NOTIF_SCHEDULE) {
+        if (min * 60 > nowSec) {
+            const t = new Date(now);
+            t.setHours(Math.floor(min / 60), min % 60, 0, 0);
+            return t.getTime();
+        }
+    }
+    return null;
+}
 let sseSource = null;
 let allTeamData = {};
 
@@ -414,7 +434,7 @@ function showApp() {
                 render();
                 renderDashboard();
                 startSSE();
-                if (Notification.permission === 'granted') startNotif(true);
+                if (Notification.permission === 'granted') startNotif();
             })
             .catch(() => {
                 allTeamData = {}; data = emptyData();
@@ -427,7 +447,7 @@ function showApp() {
             .then(d => {
                 data = extractUserData(d);
                 render();
-                if (Notification.permission === 'granted') startNotif(true);
+                if (Notification.permission === 'granted') startNotif();
             })
             .catch(() => { data = emptyData(); render(); });
     }
@@ -662,36 +682,34 @@ function handleNotifClick() {
     });
 }
 
-function startNotif(silent) {
+function startNotif() {
     notifOn = true;
-    const lastTs = parseInt(localStorage.getItem('kpi_last_notif') || '0');
-    if (lastTs) {
-        const elapsed = Math.floor((Date.now() - lastTs) / 1000);
-        countdown = Math.max(1, 30*60 - elapsed);
-    } else {
-        countdown = 30*60;
-        localStorage.setItem('kpi_last_notif', Date.now());
-    }
+    nextNotifTs = getNextNotifTs();
+
     const savedBase = localStorage.getItem('kpi_last30_base');
     if (savedBase !== null) last30Base = parseInt(savedBase);
     else { last30Base = total(); localStorage.setItem('kpi_last30_base', last30Base); }
 
     document.getElementById('notifBar').classList.add('on');
     document.getElementById('nbText').textContent = 'Уведомления включены ✓';
-    if (!silent) showToast('Уведомления включены! Каждые 30 мин.');
 
     if (notifInterval) clearInterval(notifInterval);
     notifInterval = setInterval(() => {
-        countdown--;
+        if (nextNotifTs && Date.now() >= nextNotifTs) {
+            fireNotif();
+            nextNotifTs = getNextNotifTs();
+        }
         updateNbTimer();
-        if (countdown <= 0) { fireNotif(); countdown = 30*60; }
     }, 1000);
 }
 
 function updateNbTimer() {
-    const m = Math.floor(countdown / 60);
-    const s = countdown % 60;
-    document.getElementById('nbTimer').textContent = notifOn ? `${pad(m)}:${pad(s)}` : '';
+    const el = document.getElementById('nbTimer');
+    if (!notifOn || !nextNotifTs) { el.textContent = ''; return; }
+    const sec = Math.max(0, Math.round((nextNotifTs - Date.now()) / 1000));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    el.textContent = `${pad(m)}:${pad(s)}`;
 }
 
 function fireNotif() {
@@ -703,7 +721,6 @@ function fireNotif() {
         tag: 'kpi-30min', requireInteraction: false
     });
     last30Base = t;
-    localStorage.setItem('kpi_last_notif', Date.now());
     localStorage.setItem('kpi_last30_base', last30Base);
     renderStats();
 }
